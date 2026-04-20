@@ -9,6 +9,7 @@ const projectDir = path.resolve(__dirname, "..");
 const runtimeDir = path.join(projectDir, "local-data");
 const statePath = path.join(runtimeDir, "b-state.json");
 const port = Number(process.env.MOCK_PORT || 4178);
+const corsOrigin = process.env.CORS_ORIGIN || "*";
 const schemaVersion = "b-web-standalone-v1";
 
 const defaultState = {
@@ -201,7 +202,10 @@ async function mutateState(mutator) {
 function json(response, statusCode, payload) {
   response.writeHead(statusCode, {
     "Content-Type": "application/json; charset=utf-8",
-    "Cache-Control": "no-store"
+    "Cache-Control": "no-store",
+    "Access-Control-Allow-Origin": corsOrigin,
+    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type"
   });
   response.end(JSON.stringify(payload));
 }
@@ -213,6 +217,16 @@ const server = createServer(async (request, response) => {
   }
 
   const { pathname } = new URL(request.url, "http://127.0.0.1");
+
+  if (request.method === "OPTIONS") {
+    response.writeHead(204, {
+      "Access-Control-Allow-Origin": corsOrigin,
+      "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type"
+    });
+    response.end();
+    return;
+  }
 
   if (request.method === "GET" && pathname === "/api/health") {
     json(response, 200, { ok: true, schemaVersion });
